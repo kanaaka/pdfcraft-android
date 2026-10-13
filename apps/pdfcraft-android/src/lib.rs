@@ -70,6 +70,7 @@ use pdfcraft_ui_egui::PdfCraftApp;
 mod file_picker;
 mod modifiers;
 mod prefs_watch;
+mod touch_scroll;
 
 /// The app's private data directory, captured in `android_main` before the first frame:
 /// `<internal storage>/Android/data/ai.storyteller.pdfcraft/files`.
@@ -227,6 +228,7 @@ pub fn android_main(app: winit::platform::android::activity::AndroidApp) {
             Ok(Box::new(Shell {
                 inner: app,
                 modifiers: modifiers::Tracked::default(),
+                touch: touch_scroll::TouchScroll::default(),
                 prefs: prefs_watch::Writer::new(prefs_file(), PREFS_EVERY),
             }))
         }),
@@ -254,6 +256,8 @@ struct Shell {
     /// backend sends no `ModifiersChanged` at all, which is why Shift+click and every Ctrl
     /// shortcut are dead without this (see `modifiers`).
     modifiers: modifiers::Tracked,
+    /// Two-finger scrolling, translated from touches into wheel events (see [`touch_scroll`]).
+    touch: touch_scroll::TouchScroll,
 }
 
 impl eframe::App for Shell {
@@ -268,7 +272,11 @@ impl eframe::App for Shell {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
         // Before the app, so the frame it sees already has the modifiers a desktop backend would
         // have reported (see `modifiers`).
-        self.modifiers.apply(raw);
+        let modifiers = self.modifiers.apply(raw);
+        // Then the touches: winit's Android backend has no mouse and so sends no wheel events at
+        // all, which is why nothing scrolled. A two-finger drag becomes one here (see
+        // `touch_scroll`).
+        self.touch.apply(raw, modifiers);
         eframe::App::raw_input_hook(&mut self.inner, ctx, raw);
     }
 

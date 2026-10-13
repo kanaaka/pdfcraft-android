@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.1.1 — 2026-10-13 (scrolling, modifiers, fonts, picker wording)
+
+| | |
+|---|---|
+| APK | `pdfcraft-0.6.0-arm64-v8a-20261013.apk` (21.8 MB) — supersedes the v0.1.0 asset, same signing key |
+| sha256 | `e6e77cf7b7516bbb4b9f297b51b31b3fec37b0cba1813e57bce9c98015936c40` |
+| Built from | upstream `storytold/pdfcraft` @ `3d2bdfe71ada10f6bc39afc680dce61bbf080cbc` + this repository at the commit that released it |
+| Package | `ai.storyteller.pdfcraft` — versionName `0.6.0`, versionCode `16778752`, minSdk 26, targetSdk 35 |
+| ABI | `arm64-v8a` only |
+
+### Changed
+- **Two-finger scrolling.** A two-finger drag now scrolls the document (synthesised `MouseWheel`
+  events from the touch centroid, with the lift event that starts the kinetic coast); one finger still
+  selects and a pinch still zooms.
+- **Ctrl+wheel zoom** — the shell's modifier tracker now hands its state to the touch-to-wheel bridge,
+  which stamps it onto the wheel events it synthesises.
+
+### Notes
+The build was made from exactly the source in this repository (upstream pin + the patch + the port
+crate) and signed with the same local test key as v0.1.0, so it installs over it.
+
+
 ## v0.1.0 — first published port (PdfCraft 0.6.0)
 
 | | |

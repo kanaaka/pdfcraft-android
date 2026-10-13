@@ -135,6 +135,48 @@ the launcher icon.
 | `crates/ui-egui/src/rfd.rs`, `rfd_android.rs` | 2 | **new** — the name `crate::rfd`: real `rfd` off-Android, host-backed stand-in on it |
 | call sites in `actions_ui, combine_ui, comment_props, content_ui, create_ui, editing, export_ui, files, fill_sign, folders_ui, marks_ui, measure_ui, ocr_ui, pickers, print_ui, sign_ui, stamps_ui, zoom_snap` | 18 | `rfd::` → `crate::rfd::`; `arboard` uses `cfg`-gated to the branch the web build already takes |
 
+## 2026-10-13 — Two-finger scrolling (and the wheel Android never sends)
+
+**The complaint:** on the tablet a finger drag selected text instead of moving the page, and there was
+no way to scroll at all.
+
+**Why:** every app in this suite scrolls from `egui::Event::MouseWheel` — `WordCraft`'s `scroll.rs` is
+explicit about the contract (pixel deltas move the page 1:1, `TouchPhase::End` on the last event is the
+"fingers lifted" signal that starts the kinetic coast, wheel notches count as three lines). None of
+that runs on Android, because winit's Android backend has no mouse and therefore emits no wheel
+events at all (`src/platform_impl/android/mod.rs` sends six window events and a wheel is not one of
+them). Touch arrives as `WindowEvent::Touch`, which egui-winit forwards as `egui::Event::Touch` *and*
+turns into an emulated mouse pointer — so a finger drags a selection and the page never moves.
+
+**The change — `src/touch_scroll.rs` (new, 231 lines, 3 tests), wired into the shell's
+`raw_input_hook`:**
+
+- one finger: untouched, so dragging still selects — the emulated pointer works as before;
+- two or more fingers: the centroid's movement becomes `Event::MouseWheel` with
+  `MouseWheelUnit::Point` and `TouchPhase::Move`;
+- a final `TouchPhase::End` wheel event when the fingers lift, which is what makes the app coast to a
+  stop instead of stopping dead;
+- while a two-finger gesture is live the emulated **pointer button** events are dropped, or the first
+  finger would drag a selection across the page at the same time as it scrolls. Pointer *position*
+  events are kept, because the apps only scroll while the pointer is over the canvas;
+- the touch events themselves stay in the batch: egui's pinch handling reads them, so a pinch still
+  zooms and a two-finger *pan* moves nothing but the page.
+
+**Ctrl+wheel zoom** works too, which is why `modifiers.rs`'s `apply()` now returns the state it tracked
+(`egui::Modifiers`) instead of nothing: the bridge stamps it onto the wheel event it synthesises, and
+the touch events carry it as well.
+
+**Checked:** the three tests in `touch_scroll.rs` (one-finger pass-through, two-finger centroid →
+wheel, the lift event) run on the host with `cargo test -p pdfcraft-android`; the shell compiles for
+`aarch64-linux-android`; and the string table of the `.so` inside the released APK carries the module.
+On-device behaviour is the porter's tablet test, not an automated one.
+
+## 2026-10-13 — `modifiers.rs` returns the tracked state
+
+`apply(&mut self, raw)` now returns the `egui::Modifiers` it folded into the frame's events. The
+synthesised two-finger wheel event has to carry modifiers itself (Ctrl+wheel is zoom in these apps,
+plain wheel is scroll), and only the tracker knows them, so the state is handed back rather than
+recomputed. Nothing else about the modifier handling changed.
 ## What is deliberately *not* in the patch
 
 `Cargo.lock` is excluded on purpose: it moves only because the port crate is a new workspace member,
@@ -143,6 +185,6 @@ and `cargo` regenerates it on the first build. The patch contains only changes t
 
 ## Not verified here
 
-The APK in Releases was not re-run on a device while publishing this repository. The fixes came from
+The APK attached to **v0.1.1** was built from exactly this tree on 2026-10-13 (upstream pin + the patch + the port crate), and the checks in the README's verification table were run against it. What that does *not* buy is a runtime claim: it was not launched on a device or emulator as part of publishing, so every behavioural statement below rests on the hand-testing the porter did on an arm64 tablet. The fixes came from
 the porter's hand-testing on an arm64 tablet; there is no automated device test here, so "verified" in
 the README means the source-side checks listed there plus that testing.

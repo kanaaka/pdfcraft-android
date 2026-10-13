@@ -8,8 +8,8 @@ and egui interface, packaged as a NativeActivity APK for sideloading on arm64 de
 | Upstream project | [`storytold/pdfcraft`](https://github.com/storytold/pdfcraft) — Apache-2.0 OR MIT |
 | Pinned commit | `3d2bdfe` (upstream version `0.6.0`) |
 | Android package | `ai.storyteller.pdfcraft` |
-| Published APK | `pdfcraft-0.6.0-arm64-v8a-v3.apk` — 21.8 MB, arm64-v8a, signed |
-| APK sha256 | `6c03616ce94caf0a06532e6eac46d7e975a3483afe5baec05cdf4878cd80ad18` |
+| Published APK | `pdfcraft-0.6.0-arm64-v8a-20261013.apk` — 21.8 MB, arm64-v8a, signed (release **v0.1.1**, 2026-10-13) |
+| APK sha256 | `e6e77cf7b7516bbb4b9f297b51b31b3fec37b0cba1813e57bce9c98015936c40` |
 | Upstream files changed | 22 files (2 of them new) — see [`patches/`](patches/) |
 | New port crate | `apps/pdfcraft-android/` — 918 lines of Rust plus resources |
 
@@ -73,8 +73,9 @@ A tick means the check was *run*, not inferred; the wording says how far it goes
 | Claim | How it was checked | Result |
 |---|---|---|
 | `patches/…patch` applies to a clean checkout of the pin | fresh `git init` + `git fetch --depth 1 origin 3d2bdfe71ada10f6bc39afc680dce61bbf080cbc` + `git apply --check` | ✅ applies cleanly |
-| The assembled tree equals the tree the APK was built from | file-by-file SHA-256 (line endings normalised) over every patched file and every file of the port crate | ✅ 33 files identical, none differing |
+| The assembled tree equals the tree the APK was built from | file-by-file SHA-256 (line endings normalised) over every patched file and every file of the port crate | ✅ 12 files identical, none differing |
 | The port crate compiles for Android | `cargo check -p pdfcraft-android --target aarch64-linux-android`, run in a tree assembled from scratch (fresh `git fetch` of the pin, patch applied, port crate copied in) | ✅ exit 0 |
+| The port crate's own tests | `cargo test -p pdfcraft-android` in the freshly assembled tree | ✅ 3/3 pass |
 | APK is signed and is the right artifact | `apksigner verify --verbose`, `aapt2 dump badging`, sha256 | ✅ v2/v3 signatures true, `native-code: 'arm64-v8a'`, package `ai.storyteller.pdfcraft` |
 | Behaviour on real hardware | hand-testing on the porter's arm64 tablet | ⚠️ the fixes below were found and driven by that testing; each published binary is not individually re-verified here |
 
