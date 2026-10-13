@@ -8,10 +8,10 @@ and egui interface, packaged as a NativeActivity APK for sideloading on arm64 de
 | Upstream project | [`storytold/pdfcraft`](https://github.com/storytold/pdfcraft) — Apache-2.0 OR MIT |
 | Pinned commit | `3d2bdfe` (upstream version `0.6.0`) |
 | Android package | `ai.storyteller.pdfcraft` |
-| Published APK | `pdfcraft-0.6.0-arm64-v8a-20261013.apk` — 21.8 MB, arm64-v8a, signed (release **v0.1.1**, 2026-10-13) |
-| APK sha256 | `e6e77cf7b7516bbb4b9f297b51b31b3fec37b0cba1813e57bce9c98015936c40` |
+| Published APK | `pdfcraft-0.6.0-arm64-v8a-20261013b.apk` — 21.8 MB, arm64-v8a, signed (release **v0.1.2**, 2026-10-13) |
+| APK sha256 | `0619612b7d8cfcb76690e7d12302c463aa234d939ebece8353238e6a54f7b9ce` |
 | Upstream files changed | 22 files (2 of them new) — see [`patches/`](patches/) |
-| New port crate | `apps/pdfcraft-android/` — 918 lines of Rust plus resources |
+| New port crate | `apps/pdfcraft-android/` — 1274 lines of Rust plus resources |
 
 ## What this repository is
 

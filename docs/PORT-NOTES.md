@@ -5,7 +5,7 @@ Upstream: [`storytold/pdfcraft`](https://github.com/storytold/pdfcraft) @
 Published APK: `pdfcraft-0.6.0-arm64-v8a-v3.apk`
 
 The port is `apps/pdfcraft-android/` (`src/lib.rs` 289 lines, `src/file_picker.rs` 403,
-`src/modifiers.rs` 92, `src/prefs_watch.rs` 134) plus **22 upstream files** — the largest patch in this
+`src/modifiers.rs` 202, `src/prefs_watch.rs` 134) plus **22 upstream files** — the largest patch in this
 set, and almost all of it is one problem: PdfCraft calls `rfd` directly instead of going through a
 `Services` seam, and `rfd` does not exist on Android.
 
@@ -177,6 +177,21 @@ On-device behaviour is the porter's tablet test, not an automated one.
 synthesised two-finger wheel event has to carry modifiers itself (Ctrl+wheel is zoom in these apps,
 plain wheel is scroll), and only the tracker knows them, so the state is handed back rather than
 recomputed. Nothing else about the modifier handling changed.
+## 2026-10-13 — Ctrl shortcuts: the tracker reads the physical key too
+
+### Fixed
+- **Ctrl+anything did nothing, while Shift+click and Shift+arrow worked.** winit's Android
+  logical-key table names `Shift` and `Alt` but **not** `Control` — so a Ctrl press arrives with an
+  unidentified *logical* key (egui-winit falls back to the physical one) while its physical key is
+  correctly `ControlLeft`/`ControlRight`. `src/modifiers.rs` matched the logical key alone, so it
+  never saw Ctrl go down: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+S, Ctrl+B and every other modifier shortcut
+  was dead, and only the modifiers winit happens to name worked. The tracker now reads the physical
+  key as well as the logical one, on both left and right, and keeps everything else: the per-event
+  modifier copies (so a press and a click in one frame stay ordered) and `ModifiersChanged` as the
+  authority (so a modifier held while the app goes to the background does not stick).
+  The same tracker is in all four ports of this set; it is verified end-to-end in WordCraft
+  (`Ctrl+A` selects the text, `Ctrl+B` emboldens it). This app's own shortcuts are the tablet check.
+
 ## What is deliberately *not* in the patch
 
 `Cargo.lock` is excluded on purpose: it moves only because the port crate is a new workspace member,
@@ -185,6 +200,6 @@ and `cargo` regenerates it on the first build. The patch contains only changes t
 
 ## Not verified here
 
-The APK attached to **v0.1.1** was built from exactly this tree on 2026-10-13 (upstream pin + the patch + the port crate), and the checks in the README's verification table were run against it. What that does *not* buy is a runtime claim: it was not launched on a device or emulator as part of publishing, so every behavioural statement below rests on the hand-testing the porter did on an arm64 tablet. The fixes came from
+The APK attached to **v0.1.2** was built from exactly this tree on 2026-10-13 (upstream pin + the patch + the port crate), and the checks in the README's verification table were run against it. What that does *not* buy is a runtime claim: it was not launched on a device or emulator as part of publishing, so every behavioural statement below rests on the hand-testing the porter did on an arm64 tablet. The fixes came from
 the porter's hand-testing on an arm64 tablet; there is no automated device test here, so "verified" in
 the README means the source-side checks listed there plus that testing.
